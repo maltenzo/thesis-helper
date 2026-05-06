@@ -23,11 +23,7 @@ async function fetchGenePageRaw(gene, page, filters) {
   return Array.isArray(json.data) ? json.data : [];
 }
 
-export async function fetchGene(gene, filters, onProgress) {
-  const cache = fetchGene._cache;
-  const key = `${gene}|${filters.highConfidence}|${filters.singleCell}|${filters.uniqueGenes}`;
-  if (cache.has(key)) return cache.get(key);
-
+export async function fetchGene(gene, filters) {
   const records = [];
   let page = 1;
   while (true) {
@@ -36,20 +32,10 @@ export async function fetchGene(gene, filters, onProgress) {
     if (batch.length < 100) break;
     page++;
   }
-
-  const rootRecords = records.filter(
+  return records.filter(
     (r) =>
       r.species === 'Arabidopsis thaliana' &&
       r.tissue != null &&
       r.tissue.toLowerCase().includes('root')
   );
-
-  cache.set(key, rootRecords);
-  if (onProgress) onProgress(gene, rootRecords);
-  return rootRecords;
-}
-fetchGene._cache = new Map();
-
-export function clearCache() {
-  fetchGene._cache.clear();
 }

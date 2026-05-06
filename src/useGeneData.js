@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react';
-import { fetchGene, clearCache } from './api';
+import { useState, useCallback, useMemo } from 'react';
+import { useQueries } from '@tanstack/react-query';
+import { fetchGene } from './api';
 
 export function serializeResults(geneMap, cellTypeMap) {
   return {
@@ -15,61 +16,100 @@ export function deserializeResults({ geneMap, cellTypeMap }) {
   };
 }
 
+function geneQueryKey(gene, filters) {
+  return ['gene', gene, !!filters.highConfidence, !!filters.singleCell, !!filters.uniqueGenes];
+}
+
 export function useGeneData() {
-  const [status, setStatus] = useState('idle');
-  const [progress, setProgress] = useState({ done: 0, total: 0 });
-  const [geneMap, setGeneMap] = useState(new Map());
-  const [cellTypeMap, setCellTypeMap] = useState(new Map());
-  const [error, setError] = useState(null);
+  const [targetGenes, setTargetGenes] = useState([]);
+  const [activeFilters, setActiveFilters] = useState({});
+  const [loadedState, setLoadedState] = useState(null);
 
-  const search = useCallback(async (genes, filters) => {
-    clearCache();
-    setStatus('loading');
-    setProgress({ done: 0, total: genes.length });
-    setError(null);
+  const queries = useQueries({
+    queries: targetGenes.map((gene) => ({
+      queryKey: geneQueryKey(gene, activeFilters),
+      queryFn: () => fetchGene(gene, activeFilters),
+      staleTime: Infinity,
+      gcTime: Infinity,
+    })),
+  });
 
-    const newGeneMap = new Map();
-    const newCellTypeMap = new Map();
+  const liveStatus = useMemo(() => {
+    if (targetGenes.length === 0) return 'idle';
+    if (queries.some((q) => q.isPending)) return 'loading';
+    if (queries.some((q) => q.isError)) return 'error';
+    return 'done';
+  }, [targetGenes, queries]);
 
-    try {
-      for (const gene of genes) {
-        const records = await fetchGene(gene, filters);
+  const liveProgress = useMemo(
+    () => ({
+      done: queries.filter((q) => q.isSuccess).length,
+      total: targetGenes.length,
+    }),
+    [queries, targetGenes]
+  );
 
-        const cellTypes = new Set();
-        for (const r of records) {
-          cellTypes.add(r.celltypes);
-          if (!newCellTypeMap.has(r.celltypes)) newCellTypeMap.set(r.celltypes, new Set());
-          newCellTypeMap.get(r.celltypes).add(gene);
-        }
-        newGeneMap.set(gene, cellTypes);
-
-        setProgress((p) => ({ ...p, done: p.done + 1 }));
-        await new Promise((r) => setTimeout(r, 0));
+  const liveMaps = useMemo(() => {
+    const geneMap = new Map();
+    const cellTypeMap = new Map();
+    queries.forEach((q, i) => {
+      if (!q.isSuccess) return;
+      const gene = targetGenes[i];
+      const cellTypes = new Set();
+      for (const r of q.data) {
+        cellTypes.add(r.celltypes);
+        if (!cellTypeMap.has(r.celltypes)) cellTypeMap.set(r.celltypes, new Set());
+        cellTypeMap.get(r.celltypes).add(gene);
       }
+      geneMap.set(gene, cellTypes);
+    });
+    return { geneMap, cellTypeMap };
+  }, [queries, targetGenes]);
 
-      setGeneMap(new Map(newGeneMap));
-      setCellTypeMap(new Map(newCellTypeMap));
-      setStatus('done');
-    } catch (e) {
-      setError(e.message);
-      setStatus('error');
-    }
+  const liveError = useMemo(() => {
+    const errQuery = queries.find((q) => q.isError);
+    return errQuery?.error?.message ?? null;
+  }, [queries]);
+
+  const search = useCallback((genes, filters) => {
+    setLoadedState(null);
+    setTargetGenes(genes);
+    setActiveFilters(filters);
   }, []);
 
   const loadResults = useCallback((serialized) => {
-    const { geneMap: gm, cellTypeMap: ctm } = deserializeResults(serialized);
-    setGeneMap(gm);
-    setCellTypeMap(ctm);
-    setError(null);
-    setStatus('done');
+    setTargetGenes([]);
+    setActiveFilters({});
+    setLoadedState(deserializeResults(serialized));
   }, []);
 
   const clear = useCallback(() => {
-    setGeneMap(new Map());
-    setCellTypeMap(new Map());
-    setStatus('idle');
-    setError(null);
+    setTargetGenes([]);
+    setActiveFilters({});
+    setLoadedState(null);
   }, []);
 
-  return { status, progress, geneMap, cellTypeMap, error, search, loadResults, clear };
+  if (loadedState) {
+    return {
+      status: 'done',
+      progress: { done: 0, total: 0 },
+      geneMap: loadedState.geneMap,
+      cellTypeMap: loadedState.cellTypeMap,
+      error: null,
+      search,
+      loadResults,
+      clear,
+    };
+  }
+
+  return {
+    status: liveStatus,
+    progress: liveProgress,
+    geneMap: liveMaps.geneMap,
+    cellTypeMap: liveMaps.cellTypeMap,
+    error: liveError,
+    search,
+    loadResults,
+    clear,
+  };
 }
