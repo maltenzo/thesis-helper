@@ -1,4 +1,6 @@
-const BASE_URL = '/plantscrnadb-api/marker/getMarkerByPage.php';
+const BASE_URL = import.meta.env.PROD
+  ? 'https://proxy-worker.maltenzo.workers.dev/marker/getMarkerByPage.php'
+  : '/plantscrnadb-api/marker/getMarkerByPage.php';
 
 async function fetchGenePageRaw(gene, page, filters) {
   const res = await fetch(BASE_URL, {
