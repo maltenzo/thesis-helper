@@ -55,5 +55,6 @@ export function useSavedClusters() {
     return imported.length;
   }, []);
 
-  return { clusters, save, remove, toBase64, fromBase64 };
+  const sortedClusters = [...clusters].sort((a, b) => b.name - a.name);
+  return { clusters: sortedClusters, save, remove, toBase64, fromBase64 };
 }
