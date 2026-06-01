@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { compressToBase64, decompressFromBase64 } from 'lz-string';
 
 const STORAGE_KEY = 'plantscrna_clusters';
 
@@ -36,5 +37,23 @@ export function useSavedClusters() {
     });
   }, []);
 
-  return { clusters, save, remove };
+  const toBase64 = useCallback(() => {
+    return compressToBase64(JSON.stringify(clusters));
+  }, [clusters]);
+
+  const fromBase64 = useCallback((str) => {
+    const json = decompressFromBase64(str.trim());
+    if (!json) throw new Error('Invalid or corrupted string');
+    const imported = JSON.parse(json);
+    if (!Array.isArray(imported)) throw new Error('Invalid format');
+    setClusters((prev) => {
+      const kept = prev.filter((c) => !imported.some((ic) => ic.name === c.name));
+      const next = [...imported, ...kept];
+      persist(next);
+      return next;
+    });
+    return imported.length;
+  }, []);
+
+  return { clusters, save, remove, toBase64, fromBase64 };
 }

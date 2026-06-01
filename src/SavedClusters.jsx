@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 export function SaveCluster({ genes, filters, onSave }) {
   const [name, setName] = useState('');
@@ -44,12 +44,114 @@ export function SaveCluster({ genes, filters, onSave }) {
   );
 }
 
-export function SavedClusterList({ clusters, onLoad, onDelete }) {
-  if (clusters.length === 0) return null;
+export function SavedClusterList({ clusters, onLoad, onDelete, onExport, onImport }) {
+  const [mode, setMode] = useState(null); // null | 'export' | 'import'
+  const [exportStr, setExportStr] = useState('');
+  const [importStr, setImportStr] = useState('');
+  const [importError, setImportError] = useState('');
+  const [copied, setCopied] = useState(false);
+  const textareaRef = useRef(null);
+
+  function handleExport() {
+    if (mode === 'export') { setMode(null); return; }
+    setExportStr(onExport());
+    setMode('export');
+  }
+
+  function handleImportToggle() {
+    if (mode === 'import') { setMode(null); setImportStr(''); setImportError(''); return; }
+    setMode('import');
+  }
+
+  function handleImport() {
+    setImportError('');
+    try {
+      const count = onImport(importStr);
+      setImportStr('');
+      setMode(null);
+      alert(`Imported ${count} cluster(s).`);
+    } catch (e) {
+      setImportError(e.message);
+    }
+  }
+
+  function handleCopy() {
+    navigator.clipboard.writeText(exportStr).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  if (clusters.length === 0 && mode !== 'import') return (
+    <div className="saved-clusters">
+      <div className="saved-clusters-header">
+        <span className="saved-clusters-label">Saved clusters</span>
+        <button className="cluster-io-btn" onClick={handleImportToggle}>Import</button>
+      </div>
+      {mode === 'import' && (
+        <div className="cluster-io-panel">
+          <textarea
+            className="cluster-io-textarea"
+            value={importStr}
+            onChange={(e) => setImportStr(e.target.value)}
+            placeholder="Paste exported string here…"
+            rows={4}
+            ref={textareaRef}
+          />
+          {importError && <span className="cluster-io-error">{importError}</span>}
+          <button className="cluster-io-confirm-btn" onClick={handleImport} disabled={!importStr.trim()}>
+            Import
+          </button>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="saved-clusters">
-      <div className="saved-clusters-label">Saved clusters</div>
+      <div className="saved-clusters-header">
+        <span className="saved-clusters-label">Saved clusters</span>
+        <div className="cluster-io-btns">
+          <button className={`cluster-io-btn${mode === 'export' ? ' active' : ''}`} onClick={handleExport}>
+            Export
+          </button>
+          <button className={`cluster-io-btn${mode === 'import' ? ' active' : ''}`} onClick={handleImportToggle}>
+            Import
+          </button>
+        </div>
+      </div>
+
+      {mode === 'export' && (
+        <div className="cluster-io-panel">
+          <textarea
+            className="cluster-io-textarea"
+            value={exportStr}
+            readOnly
+            rows={4}
+            onClick={(e) => e.target.select()}
+          />
+          <button className="cluster-io-confirm-btn" onClick={handleCopy}>
+            {copied ? 'Copied!' : 'Copy'}
+          </button>
+        </div>
+      )}
+
+      {mode === 'import' && (
+        <div className="cluster-io-panel">
+          <textarea
+            className="cluster-io-textarea"
+            value={importStr}
+            onChange={(e) => setImportStr(e.target.value)}
+            placeholder="Paste exported string here…"
+            rows={4}
+          />
+          {importError && <span className="cluster-io-error">{importError}</span>}
+          <button className="cluster-io-confirm-btn" onClick={handleImport} disabled={!importStr.trim()}>
+            Import
+          </button>
+        </div>
+      )}
+
       <ul className="cluster-list">
         {clusters.map((c) => (
           <li key={c.id} className="cluster-item">

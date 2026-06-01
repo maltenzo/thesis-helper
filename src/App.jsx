@@ -9,7 +9,7 @@ import './App.css';
 
 export default function App() {
   const { status, progress, geneMap, cellTypeMap, error, search, loadResults, clear } = useGeneData();
-  const { clusters, save, remove } = useSavedClusters();
+  const { clusters, save, remove, toBase64, fromBase64 } = useSavedClusters();
   const [selectedGene, setSelectedGene] = useState(null);
   const [selectedCellType, setSelectedCellType] = useState(null);
   const [currentGenes, setCurrentGenes] = useState([]);
@@ -113,6 +113,8 @@ export default function App() {
             clusters={clusters}
             onLoad={handleLoadCluster}
             onDelete={remove}
+            onExport={toBase64}
+            onImport={fromBase64}
           />
         </aside>
 
