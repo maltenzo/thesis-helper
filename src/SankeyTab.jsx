@@ -166,11 +166,11 @@ function buildLayout(transitions, annotationsByRes, width, height) {
 }
 
 // ── Label transfer (exported for tests) ──────────────────────────────
-// Returns { "res__id": annotation } for all clusters reachable from sourceRes
-// using proportional BFS through transitions.
-export function computeLabelTransfer(transitions, sourceRes, sourceAnnotations) {
+
+// Internal BFS: returns raw votes { "res__id": { annotation: weight } }
+// for all clusters in non-sourceRes resolutions.
+function _runBFS(transitions, sourceRes, sourceAnnotations) {
   // Build adjacency: (fromRes, fromId) → [{toRes, toId, count}]
-  // and also total outgoing count per (fromRes, fromId)
   const fwd = {}; // key → [{toRes, toId, count}]
   for (const t of transitions) {
     for (const l of t.links) {
@@ -179,18 +179,15 @@ export function computeLabelTransfer(transitions, sourceRes, sourceAnnotations) 
     }
   }
 
-  const result = {};
-
-  // For every cluster in every non-source resolution, propagate forward to sourceRes
-  // using weight = proportion of cells flowing through each edge.
   const allResolutions = [...new Set(
     transitions.flatMap(t => [t.fromRes, t.toRes])
   )];
 
+  const rawVotes = {}; // "res__id" → { annotation: weight }
+
   for (const res of allResolutions) {
     if (res === sourceRes) continue;
 
-    // Collect clusters in this resolution
     const clusters = new Set();
     for (const t of transitions) {
       if (t.fromRes === res) t.links.forEach(l => clusters.add(l.from));
@@ -198,7 +195,6 @@ export function computeLabelTransfer(transitions, sourceRes, sourceAnnotations) 
     }
 
     for (const id of clusters) {
-      // BFS: frontier = Map<"res__id" → weight>
       let frontier = new Map([[`${res}__${id}`, 1.0]]);
       const votes = {}; // annotation → accumulated weight
 
@@ -206,7 +202,9 @@ export function computeLabelTransfer(transitions, sourceRes, sourceAnnotations) 
       for (let step = 0; step < maxSteps && frontier.size > 0; step++) {
         const next = new Map();
         for (const [node, w] of frontier) {
-          const [nRes, nId] = node.split('__');
+          const sep = node.indexOf('__');
+          const nRes = node.slice(0, sep);
+          const nId  = node.slice(sep + 2);
           if (nRes === sourceRes) {
             const ann = sourceAnnotations[nId];
             if (ann) votes[ann] = (votes[ann] ?? 0) + w;
@@ -223,11 +221,39 @@ export function computeLabelTransfer(transitions, sourceRes, sourceAnnotations) 
         frontier = next;
       }
 
-      const best = Object.entries(votes).sort((a, b) => b[1] - a[1])[0];
-      if (best) result[`${res}__${id}`] = best[0];
+      if (Object.keys(votes).length > 0) {
+        rawVotes[`${res}__${id}`] = votes;
+      }
     }
   }
 
+  return rawVotes;
+}
+
+// Returns { "res__id": annotation } for all clusters reachable from sourceRes
+// using proportional BFS through transitions.
+export function computeLabelTransfer(transitions, sourceRes, sourceAnnotations) {
+  const rawVotes = _runBFS(transitions, sourceRes, sourceAnnotations);
+  const result = {};
+  for (const [key, votes] of Object.entries(rawVotes)) {
+    const best = Object.entries(votes).sort((a, b) => b[1] - a[1])[0];
+    if (best) result[key] = best[0];
+  }
+  return result;
+}
+
+// Returns { "res__id": number } where number is purity (0.0–1.0):
+// max(votes) / sum(votes). Clusters with no votes are omitted.
+export function computePurityScores(transitions, sourceRes, sourceAnnotations) {
+  const rawVotes = _runBFS(transitions, sourceRes, sourceAnnotations);
+  const result = {};
+  for (const [key, votes] of Object.entries(rawVotes)) {
+    const vals = Object.values(votes);
+    if (!vals.length) continue;
+    const total = vals.reduce((s, v) => s + v, 0);
+    const max   = Math.max(...vals);
+    result[key] = total > 0 ? max / total : 0;
+  }
   return result;
 }
 
@@ -382,6 +408,11 @@ export function SankeyTab({ onGoToAnnotator }) {
     return resWithAnnotations.sort((a, b) => parseFloat(b) - parseFloat(a))[0];
   }, [annotationsByRes]);
 
+  const purityScores = useMemo(() => {
+    if (!sourceRes) return {};
+    return computePurityScores(transitions, sourceRes, annotationsByRes[sourceRes] ?? {});
+  }, [transitions, sourceRes, annotationsByRes]);
+
   function handleLabelTransfer() {
     if (!sourceRes) return;
     const sourceAnnotations = annotationsByRes[sourceRes] ?? {};
@@ -480,6 +511,23 @@ export function SankeyTab({ onGoToAnnotator }) {
               <div className="sankey-tip-ann">{hoveredNode.annotation}</div>
             )}
             <div className="sankey-tip-cells">{hoveredNode.cells.toLocaleString()} células</div>
+            {(() => {
+              const purity = purityScores[`${hoveredNode.res}__${hoveredNode.id}`];
+              if (purity == null) return null;
+              const pct = Math.round(purity * 100);
+              const barColor = purity >= 0.8 ? '#68d391' : purity >= 0.5 ? '#f6e05e' : '#fc8181';
+              return (
+                <div className="sankey-tip-purity">
+                  <span className="sankey-tip-purity-label">Purity: {pct}%</span>
+                  <div className="sankey-tip-purity-bar-bg">
+                    <div
+                      className="sankey-tip-purity-bar-fill"
+                      style={{ width: `${pct}%`, background: barColor }}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
             {onGoToAnnotator && (
               <button
                 className="sankey-goto-btn"

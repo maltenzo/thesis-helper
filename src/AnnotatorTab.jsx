@@ -19,10 +19,17 @@ export function AnnotatorTab({ onSendToExplorer }) {
   const [showExport, setShowExport] = useState(false);
   const [exportText, setExportText] = useState('');
   const [copied, setCopied] = useState(false);
+  const [currentRes, setCurrentRes] = useState(null);
+
+  function resKey(id) {
+    return currentRes ? `${currentRes}__${id}` : id;
+  }
 
   function handleScoringFile(e) {
     const file = e.target.files[0];
     if (!file) return;
+    const resMatch = file.name.match(/leiden_(\d+(?:\.\d+)?)/);
+    setCurrentRes(resMatch ? resMatch[1] : null);
     const reader = new FileReader();
     reader.onload = ev => {
       const rows = parseScoringCsv(ev.target.result);
@@ -47,19 +54,20 @@ export function AnnotatorTab({ onSendToExplorer }) {
 
   function selectCluster(id) {
     setSelectedId(id);
-    setInputValue(annotations[id] ?? '');
+    setInputValue(annotations[resKey(id)] ?? annotations[id] ?? '');
     setShowExport(false);
   }
 
   function handleAssign() {
     if (!selectedId || !inputValue.trim()) return;
     const trimmed = inputValue.trim();
-    annotate(selectedId, trimmed);
+    const key = resKey(String(selectedId));
+    annotate(key, trimmed);
     // auto-advance to next unannotated cluster
-    const newAnnotations = { ...annotations, [String(selectedId)]: trimmed };
+    const newAnnotations = { ...annotations, [key]: trimmed };
     const ids = clusters.map(r => String(r[clusterKey]));
     const currentIdx = ids.indexOf(String(selectedId));
-    const next = ids.slice(currentIdx + 1).find(id => !newAnnotations[id]);
+    const next = ids.slice(currentIdx + 1).find(id => !newAnnotations[resKey(id)]);
     if (next) {
       setSelectedId(next);
       setInputValue('');
@@ -69,7 +77,7 @@ export function AnnotatorTab({ onSendToExplorer }) {
   function handleExport() {
     const lines = clusters.map(row => {
       const id = row[clusterKey];
-      const ann = annotations[String(id)];
+      const ann = annotations[resKey(String(id))] ?? annotations[String(id)];
       return ann ? `    ${id}: '${ann}',` : `    # ${id}: '',  # TODO`;
     });
     const dict = `combined_insights = {\n${lines.join('\n')}\n}`;
@@ -86,7 +94,7 @@ export function AnnotatorTab({ onSendToExplorer }) {
     });
   }
 
-  const annotatedCount = clusters.filter(r => annotations[String(r[clusterKey])]).length;
+  const annotatedCount = clusters.filter(r => annotations[resKey(String(r[clusterKey]))] ?? annotations[String(r[clusterKey])]).length;
   const selectedRow = clusters.find(r => String(r[clusterKey]) === String(selectedId));
   const topDeGenes = selectedId
     ? (deGenes.get(String(selectedId)) ?? deGenes.get(String(parseInt(selectedId))) ?? [])
@@ -114,6 +122,9 @@ export function AnnotatorTab({ onSendToExplorer }) {
             <div className="annotator-progress">
               <span className="ann-progress-label">
                 {annotatedCount} / {clusters.length} annotated
+                {currentRes && (
+                  <span className="res-badge">leiden_{currentRes}</span>
+                )}
               </span>
               <div className="ann-progress-track">
                 <div
@@ -126,7 +137,7 @@ export function AnnotatorTab({ onSendToExplorer }) {
             <ul className="annotator-cluster-list">
               {clusters.map(row => {
                 const id = String(row[clusterKey]);
-                const ann = annotations[id];
+                const ann = annotations[resKey(id)] ?? annotations[id];
                 const isSelected = String(selectedId) === id;
                 return (
                   <li
@@ -175,10 +186,11 @@ export function AnnotatorTab({ onSendToExplorer }) {
             row={selectedRow}
             clusterKey={clusterKey}
             annotations={annotations}
+            currentRes={currentRes}
             inputValue={inputValue}
             onInputChange={setInputValue}
             onAssign={handleAssign}
-            onUnannotate={() => unannotate(String(selectedRow[clusterKey]))}
+            onUnannotate={() => unannotate(resKey(String(selectedRow[clusterKey])))}
             topDeGenes={topDeGenes}
             onSendToExplorer={onSendToExplorer}
             hasDeData={deGenes.size > 0}
@@ -205,11 +217,12 @@ export function AnnotatorTab({ onSendToExplorer }) {
 }
 
 function ClusterDetail({
-  row, clusterKey, annotations, inputValue, onInputChange,
+  row, clusterKey, annotations, currentRes, inputValue, onInputChange,
   onAssign, onUnannotate, topDeGenes, onSendToExplorer, hasDeData,
 }) {
   const id = String(row[clusterKey]);
-  const currentAnn = annotations[id];
+  const key = currentRes ? `${currentRes}__${id}` : id;
+  const currentAnn = annotations[key] ?? annotations[id];
 
   const topScores = [];
   for (let n = 1; n <= 5; n++) {

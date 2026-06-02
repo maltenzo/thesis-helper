@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeHighlightedLinks, computeLabelTransfer } from './SankeyTab.jsx';
+import { computeHighlightedLinks, computeLabelTransfer, computePurityScores } from './SankeyTab.jsx';
 
 // Helper to build a link object (only the fields BFS uses)
 function link(fromRes, fromId, toRes, toId) {
@@ -136,5 +136,55 @@ describe('computeLabelTransfer', () => {
     }];
     const result = computeLabelTransfer(t, '1.0', sourceAnnotations);
     expect(result['0.3__1']).toBe('Endodermis');
+  });
+});
+
+// ── computePurityScores ───────────────────────────────────────────────
+// Same transitions and sourceAnnotations as computeLabelTransfer tests.
+
+describe('computePurityScores', () => {
+  it('cluster with 100% of cells going to one type → purity = 1.0', () => {
+    // 0.3__2: 100% → 0.5__2 → 1.0__B (Cortex) → purity = 1.0
+    const result = computePurityScores(transitions, '1.0', sourceAnnotations);
+    expect(result['0.3__2']).toBeCloseTo(1.0, 5);
+  });
+
+  it('cluster with 80/20 split → purity ≈ 0.8', () => {
+    // 0.3__1: 80 cells → 0.5__1 → 1.0__A, 20 cells → 0.5__2 → 1.0__B
+    // votes: { Endodermis: 0.8, Cortex: 0.2 } → purity = 0.8 / 1.0 = 0.8
+    const result = computePurityScores(transitions, '1.0', sourceAnnotations);
+    expect(result['0.3__1']).toBeCloseTo(0.8, 5);
+  });
+
+  it('cluster with 51/49 split → purity ≈ 0.51', () => {
+    const t = [{
+      resKey: '0.3_1.0', fromRes: '0.3', toRes: '1.0',
+      links: [{ from: '1', to: 'A', count: 51 }, { from: '1', to: 'B', count: 49 }],
+    }];
+    const result = computePurityScores(t, '1.0', sourceAnnotations);
+    expect(result['0.3__1']).toBeCloseTo(51 / 100, 5);
+  });
+
+  it('does not include sourceRes clusters in result', () => {
+    const result = computePurityScores(transitions, '1.0', sourceAnnotations);
+    expect(Object.keys(result).every(k => !k.startsWith('1.0__'))).toBe(true);
+  });
+
+  it('returns empty object when transitions are empty', () => {
+    const result = computePurityScores([], '1.0', sourceAnnotations);
+    expect(result).toEqual({});
+  });
+
+  it('returns empty object when sourceAnnotations are empty', () => {
+    const result = computePurityScores(transitions, '1.0', {});
+    expect(result).toEqual({});
+  });
+
+  it('intermediate clusters also get purity scores', () => {
+    // 0.5__1: 100% → 1.0__A → purity = 1.0
+    // 0.5__2: 100% → 1.0__B → purity = 1.0
+    const result = computePurityScores(transitions, '1.0', sourceAnnotations);
+    expect(result['0.5__1']).toBeCloseTo(1.0, 5);
+    expect(result['0.5__2']).toBeCloseTo(1.0, 5);
   });
 });

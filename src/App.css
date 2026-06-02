@@ -855,6 +855,16 @@ tr:hover .matrix-cell.present {
   color: #718096;
 }
 
+.res-badge {
+  font-size: 10px;
+  color: #63b3ed;
+  background: #1a365d44;
+  border: 1px solid #2b6cb055;
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-left: 6px;
+}
+
 .ann-progress-track {
   height: 4px;
   background: #2d3748;
@@ -1433,6 +1443,31 @@ tr:hover .matrix-cell.present {
 .sankey-tip-cells {
   font-size: 11px;
   color: #718096;
+}
+
+.sankey-tip-purity {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sankey-tip-purity-label {
+  font-size: 10px;
+  color: #a0aec0;
+}
+
+.sankey-tip-purity-bar-bg {
+  height: 4px;
+  background: #2d3748;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.sankey-tip-purity-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.2s;
 }
 
 .sankey-goto-btn {
