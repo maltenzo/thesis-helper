@@ -4,6 +4,7 @@ import { MatrixTable } from './MatrixTable';
 import { DetailPanel } from './DetailPanel';
 import { SaveCluster, SavedClusterList } from './SavedClusters';
 import { AnnotatorTab } from './AnnotatorTab';
+import { SankeyTab } from './SankeyTab';
 import { useGeneData, serializeResults } from './useGeneData';
 import { useSavedClusters } from './useSavedClusters';
 import './App.css';
@@ -78,7 +79,13 @@ export default function App() {
             className={`tab-btn ${activeTab === 'annotator' ? 'active' : ''}`}
             onClick={() => setActiveTab('annotator')}
           >
-            Annotator
+            Annotator <span className="tab-beta">BETA</span>
+          </button>
+          <button
+            className={`tab-btn ${activeTab === 'sankey' ? 'active' : ''}`}
+            onClick={() => setActiveTab('sankey')}
+          >
+            Sankey <span className="tab-beta">BETA</span>
           </button>
         </nav>
         <button
@@ -170,6 +177,11 @@ export default function App() {
       {/* Annotator tab — always mounted to preserve uploaded CSV state */}
       <main className={`app-main ${activeTab !== 'annotator' ? 'tab-hidden' : ''}`}>
         <AnnotatorTab onSendToExplorer={sendToExplorer} />
+      </main>
+
+      {/* Sankey tab — always mounted to preserve uploaded CSV state */}
+      <main className={`app-main ${activeTab !== 'sankey' ? 'tab-hidden' : ''}`}>
+        <SankeyTab onGoToAnnotator={(res, clusterId) => setActiveTab('annotator')} />
       </main>
     </div>
   );

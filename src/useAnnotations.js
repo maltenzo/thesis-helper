@@ -36,5 +36,13 @@ export function useAnnotations() {
     localStorage.removeItem(STORAGE_KEY);
   }, []);
 
-  return { annotations, set, remove, clearAll };
+  const setBulk = useCallback((map) => {
+    setAnnotations(prev => {
+      const next = { ...prev, ...map };
+      persist(next);
+      return next;
+    });
+  }, []);
+
+  return { annotations, set, setBulk, remove, clearAll };
 }

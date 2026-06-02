@@ -791,6 +791,15 @@ tr:hover .matrix-cell.present {
   color: #68d391;
 }
 
+.tab-beta {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #ed8936;
+  vertical-align: super;
+  margin-left: 2px;
+}
+
 /* ── Annotator: upload section ── */
 .annotator-upload {
   display: flex;
@@ -1366,6 +1375,139 @@ tr:hover .matrix-cell.present {
 
 .copy-export-btn:hover {
   background: #4299e1;
+}
+
+/* ── Sankey tab ── */
+.sankey-loaded {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sankey-resolutions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sankey-res-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  background: #1a1f2e;
+  border-radius: 5px;
+  font-size: 11px;
+}
+
+.sankey-res-label {
+  color: #90cdf4;
+  font-family: monospace;
+}
+
+.sankey-res-count {
+  color: #4a5568;
+}
+
+.sankey-tooltip-panel {
+  background: #1a1f2e;
+  border: 1px solid #2d3748;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.sankey-tip-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.sankey-tip-ann {
+  font-size: 12px;
+  color: #68d391;
+}
+
+.sankey-tip-cells {
+  font-size: 11px;
+  color: #718096;
+}
+
+.sankey-goto-btn {
+  margin-top: 4px;
+  background: none;
+  border: 1px solid #2d3748;
+  border-radius: 5px;
+  color: #90cdf4;
+  font-size: 11px;
+  padding: 4px 8px;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.sankey-goto-btn:hover {
+  border-color: #90cdf4;
+  color: #bee3f8;
+}
+
+.sankey-transfer-btn {
+  margin-top: 10px;
+  width: 100%;
+  background: none;
+  border: 1px solid #2b6cb0;
+  border-radius: 5px;
+  color: #63b3ed;
+  font-size: 11px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: left;
+}
+
+.sankey-transfer-btn:hover {
+  border-color: #63b3ed;
+  background: #1a365d22;
+}
+
+.sankey-export-btn {
+  border-color: #276749;
+  color: #68d391;
+  margin-top: 4px;
+}
+
+.sankey-export-btn:hover {
+  border-color: #68d391;
+  background: #22543d22;
+}
+
+.sankey-legend {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid #2d3748;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sankey-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.sankey-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.sankey-legend-label {
+  font-size: 11px;
+  color: #a0aec0;
 }
 
 .export-pre {
