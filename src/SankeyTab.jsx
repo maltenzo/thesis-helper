@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { parseScoringCsv } from './parseCsv';
+import { parseScoringCsv, parseDeCsv } from './parseCsv';
 import { useAnnotations } from './useAnnotations';
 
 // Parse a crosstab CSV: first col = from_cluster, rest = to_cluster counts
@@ -297,6 +297,9 @@ export function SankeyTab({ onGoToAnnotator }) {
   const { annotations, setBulk } = useAnnotations();
   const [transitions, setTransitions] = useState([]); // [{resKey, fromRes, toRes, links}]
   const [scoringFiles, setScoringFiles] = useState({}); // res → [{Cluster, n_cells, ...}]
+  const [deByRes, setDeByRes] = useState({}); // res → Map<clusterId, [{name,zscore,logFC,pct}]>
+  const [geneQuery, setGeneQuery] = useState('');
+  const [showColors, setShowColors] = useState(true);
   const [hoveredLink, setHoveredLink] = useState(null);
   const [hoveredNode, setHoveredNode] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
@@ -349,6 +352,22 @@ export function SankeyTab({ onGoToAnnotator }) {
     });
   }
 
+  function handleDeFile(e) {
+    const files = [...e.target.files];
+    e.target.value = '';
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const m = file.name.match(/leiden_(\d+(?:\.\d+)?)/);
+        if (!m) return;
+        const res = m[1];
+        const deMap = parseDeCsv(ev.target.result);
+        setDeByRes(prev => ({ ...prev, [res]: deMap }));
+      };
+      reader.readAsText(file);
+    });
+  }
+
   // Build annotations per resolution: res → {clusterId → cellType}
   // annotations from useAnnotations are keyed by cluster id (no resolution prefix)
   // Scoring files tell us cluster ids per resolution
@@ -373,6 +392,41 @@ export function SankeyTab({ onGoToAnnotator }) {
     }
     return result;
   }, [scoringFiles, annotations]);
+
+  // Sorted unique gene names across all loaded DE files
+  const allGenes = useMemo(() => {
+    const set = new Set();
+    for (const deMap of Object.values(deByRes))
+      for (const genes of deMap.values())
+        genes.forEach(g => set.add(g.name));
+    return [...set].sort();
+  }, [deByRes]);
+
+  const suggestions = useMemo(() => {
+    const q = geneQuery.trim().toUpperCase();
+    if (!q || q.length < 2) return [];
+    const starts = allGenes.filter(g => g.toUpperCase().startsWith(q));
+    const contains = allGenes.filter(g => !g.toUpperCase().startsWith(q) && g.toUpperCase().includes(q));
+    return [...starts, ...contains].slice(0, 5);
+  }, [geneQuery, allGenes]);
+
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // gene → { "res__id": {zscore, pct, logFC} }, normalizedMax for scaling
+  const geneScores = useMemo(() => {
+    const gene = geneQuery.trim().toUpperCase();
+    if (!gene || Object.keys(deByRes).length === 0) return null;
+    const scores = {};
+    for (const [res, deMap] of Object.entries(deByRes)) {
+      for (const [clusterId, genes] of deMap.entries()) {
+        const entry = genes.find(g => g.name.toUpperCase() === gene);
+        if (entry) scores[`${res}__${clusterId}`] = entry;
+      }
+    }
+    if (Object.keys(scores).length === 0) return null;
+    const maxZ = Math.max(...Object.values(scores).map(s => s.zscore ?? 0), 1);
+    return { scores, maxZ };
+  }, [geneQuery, deByRes]);
 
   const { cols, links } = useMemo(() => {
     if (transitions.length === 0) return { cols: [], links: [] };
@@ -472,7 +526,57 @@ export function SankeyTab({ onGoToAnnotator }) {
               onChange={handleScoringFile}
             />
           </label>
+          <label className="upload-file-label secondary">
+            DE genes CSVs (opcional, para gene stripe)
+            <input
+              type="file"
+              accept=".csv"
+              multiple
+              onChange={handleDeFile}
+            />
+          </label>
         </div>
+
+        {Object.keys(deByRes).length > 0 && (
+          <div className="sankey-gene-search">
+            <div className="sankey-gene-input-wrap">
+              <input
+                className="sankey-gene-input"
+                placeholder="Gen (ej: SCR, WOX5)…"
+                value={geneQuery}
+                onChange={e => { setGeneQuery(e.target.value); setShowSuggestions(true); }}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
+                onKeyDown={e => {
+                  if (e.key === 'Escape') { setShowSuggestions(false); e.target.blur(); }
+                }}
+                spellCheck={false}
+                autoComplete="off"
+              />
+              {showSuggestions && suggestions.length > 0 && (
+                <ul className="sankey-gene-suggestions">
+                  {suggestions.map(g => (
+                    <li
+                      key={g}
+                      className="sankey-gene-suggestion"
+                      onMouseDown={() => { setGeneQuery(g); setShowSuggestions(false); }}
+                    >
+                      {g}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            {geneQuery.trim().length >= 2 && !geneScores && suggestions.length === 0 && (
+              <span className="sankey-gene-notfound">No encontrado</span>
+            )}
+            {geneScores && (
+              <span className="sankey-gene-found">
+                {Object.keys(geneScores.scores).length} clusters · {geneQuery.trim()}
+              </span>
+            )}
+          </div>
+        )}
 
         {loaded > 0 && (
           <div className="sankey-loaded">
@@ -511,6 +615,18 @@ export function SankeyTab({ onGoToAnnotator }) {
               <div className="sankey-tip-ann">{hoveredNode.annotation}</div>
             )}
             <div className="sankey-tip-cells">{hoveredNode.cells.toLocaleString()} células</div>
+            {geneScores && (() => {
+              const gs = geneScores.scores[`${hoveredNode.res}__${hoveredNode.id}`];
+              if (!gs) return <div className="sankey-tip-gene-absent">— no expresa {geneQuery.trim()}</div>;
+              return (
+                <div className="sankey-tip-gene">
+                  <span className="sankey-tip-gene-name">{geneQuery.trim()}</span>
+                  {gs.zscore != null && <span>z={gs.zscore.toFixed(1)}</span>}
+                  {gs.logFC  != null && <span>logFC={gs.logFC > 0 ? '+' : ''}{gs.logFC.toFixed(2)}</span>}
+                  {gs.pct    != null && <span>{(gs.pct * 100).toFixed(0)}% expr</span>}
+                </div>
+              );
+            })()}
             {(() => {
               const purity = purityScores[`${hoveredNode.res}__${hoveredNode.id}`];
               if (purity == null) return null;
@@ -551,7 +667,15 @@ export function SankeyTab({ onGoToAnnotator }) {
         )}
 
         <div className="sankey-legend">
-          <div className="detail-section-title" style={{ marginBottom: 6 }}>Colores</div>
+          <div className="sankey-legend-header">
+            <div className="detail-section-title">Colores</div>
+            <button
+              className="sankey-color-toggle"
+              onClick={() => setShowColors(v => !v)}
+            >
+              {showColors ? 'Ocultar' : 'Mostrar'}
+            </button>
+          </div>
           {Object.entries(CELL_TYPE_COLORS).slice(0, 10).map(([ct, color]) => (
             <div key={ct} className="sankey-legend-item">
               <span className="sankey-legend-dot" style={{ background: color }} />
@@ -593,9 +717,9 @@ export function SankeyTab({ onGoToAnnotator }) {
                 <path
                   key={i}
                   d={top + bot}
-                  fill={l.color}
+                  fill={showColors ? l.color : '#4a5568'}
                   fillOpacity={isHighlighted ? (isHovered ? 0.65 : 0.45) : 0.04}
-                  stroke={l.color}
+                  stroke={showColors ? l.color : '#4a5568'}
                   strokeOpacity={isHighlighted ? (isHovered ? 1 : 0.6) : 0.08}
                   strokeWidth={0.5}
                   style={{ cursor: 'pointer', transition: 'fill-opacity 0.2s, stroke-opacity 0.2s' }}
@@ -608,7 +732,7 @@ export function SankeyTab({ onGoToAnnotator }) {
             {/* Nodes */}
             {cols.map(col =>
               col.nodes.map(node => {
-                const color = clusterColor(node.annotation);
+                const color = showColors ? clusterColor(node.annotation) : '#4a5568';
                 const nodeKey = `${node.res}__${node.id}`;
                 const isHovered  = hoveredNode?.id === node.id && hoveredNode?.res === node.res;
                 const isSelected = selectedNode?.id === node.id && selectedNode?.res === node.res;
@@ -632,6 +756,25 @@ export function SankeyTab({ onGoToAnnotator }) {
                       stroke={isSelected ? '#fff' : 'none'}
                       strokeWidth={isSelected ? 1.5 : 0}
                     />
+                    {/* Gene stripe overlay */}
+                    {geneScores && (() => {
+                      const gs = geneScores.scores[nodeKey];
+                      if (!gs) return null;
+                      const frac = Math.min((gs.zscore ?? 0) / geneScores.maxZ, 1);
+                      const stripeH = Math.max(frac * Math.max(node.h, 2), 2);
+                      return (
+                        <rect
+                          x={col.x + 16}
+                          y={node.y + Math.max(node.h, 2) - stripeH}
+                          width={4}
+                          height={stripeH}
+                          fill="#f6ad55"
+                          opacity={0.9}
+                          rx={2}
+                          style={{ pointerEvents: 'none' }}
+                        />
+                      );
+                    })()}
                     {node.h >= 16 && (
                       <text
                         x={col.x + 24}
