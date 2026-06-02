@@ -1339,6 +1339,135 @@ tr:hover .matrix-cell.present {
   color: #bee3f8;
 }
 
+/* ── Autopilot ── */
+.autopilot-section {
+  border-top: 1px solid #1a365d;
+  padding-top: 12px;
+}
+
+.autopilot-params {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.autopilot-param {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 10px;
+  color: #718096;
+}
+
+.autopilot-input {
+  width: 56px;
+  background: #1a202c;
+  border: 1px solid #2d3748;
+  border-radius: 4px;
+  color: #e2e8f0;
+  font-size: 12px;
+  padding: 3px 6px;
+  outline: none;
+}
+
+.autopilot-run-btn {
+  width: 100%;
+  background: none;
+  border: 1px solid #2b6cb0;
+  border-radius: 5px;
+  color: #63b3ed;
+  font-size: 11px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.autopilot-run-btn:hover {
+  border-color: #63b3ed;
+  background: #1a365d22;
+}
+
+.autopilot-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.autopilot-progress-label {
+  font-size: 10px;
+  color: #718096;
+}
+
+.autopilot-progress-bar {
+  height: 3px;
+  background: #2d3748;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.autopilot-progress-fill {
+  height: 100%;
+  background: #63b3ed;
+  border-radius: 2px;
+  transition: width 0.2s;
+}
+
+.autopilot-results {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.autopilot-meta {
+  font-size: 10px;
+  color: #4a5568;
+}
+
+.autopilot-suggestion {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.autopilot-sug-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.autopilot-sug-type {
+  flex: 1;
+  font-size: 12px;
+  color: #e2e8f0;
+}
+
+.autopilot-sug-conf {
+  font-size: 11px;
+  color: #a0aec0;
+  min-width: 32px;
+  text-align: right;
+}
+
+.autopilot-conf-bar-bg {
+  height: 3px;
+  background: #2d3748;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.autopilot-conf-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+.autopilot-empty {
+  font-size: 11px;
+  color: #4a5568;
+}
+
 /* ── Export overlay ── */
 .export-overlay {
   position: absolute;

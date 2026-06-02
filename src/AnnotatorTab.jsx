@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { parseScoringCsv, parseDeCsv, cleanLabel } from './parseCsv';
 import { useAnnotations } from './useAnnotations';
+import { useAutopilot } from './useAutopilot';
 
 const CELL_TYPES = [
   'QC', 'Columella', 'LRC', 'Trichoblast', 'Atrichoblast',
@@ -220,6 +221,10 @@ function ClusterDetail({
   row, clusterKey, annotations, currentRes, inputValue, onInputChange,
   onAssign, onUnannotate, topDeGenes, onSendToExplorer, hasDeData,
 }) {
+  const { status: apStatus, progress: apProgress, result: apResult, run: apRun, reset: apReset } = useAutopilot();
+  const [apN, setApN] = useState(10);
+  const [apM, setApM] = useState(5);
+
   const id = String(row[clusterKey]);
   const key = currentRes ? `${currentRes}__${id}` : id;
   const currentAnn = annotations[key] ?? annotations[id];
@@ -389,6 +394,94 @@ function ClusterDetail({
                 Search top 30 in Explorer →
               </button>
             </>
+          )}
+        </div>
+      )}
+
+      {hasDeData && topDeGenes.length > 0 && (
+        <div className="detail-section autopilot-section">
+          <div className="detail-section-title">Autopilot</div>
+
+          <div className="autopilot-params">
+            <label className="autopilot-param">
+              <span>Iteraciones</span>
+              <input
+                type="number" min={1} max={50} value={apN}
+                onChange={e => setApN(Math.max(1, parseInt(e.target.value) || 1))}
+                className="autopilot-input"
+                disabled={apStatus === 'fetching' || apStatus === 'iterating'}
+              />
+            </label>
+            <label className="autopilot-param">
+              <span>Genes a omitir</span>
+              <input
+                type="number" min={0} max={25} value={apM}
+                onChange={e => setApM(Math.max(0, parseInt(e.target.value) || 0))}
+                className="autopilot-input"
+                disabled={apStatus === 'fetching' || apStatus === 'iterating'}
+              />
+            </label>
+          </div>
+
+          {(apStatus === 'idle' || apStatus === 'done') && (
+            <button
+              className="autopilot-run-btn"
+              onClick={() => { apReset(); apRun(topDeGenes, { nIterations: apN, dropM: apM }); }}
+            >
+              {apStatus === 'done' ? 'Repetir →' : 'Correr autopilot →'}
+            </button>
+          )}
+
+          {(apStatus === 'fetching' || apStatus === 'iterating') && (
+            <div className="autopilot-progress">
+              <div className="autopilot-progress-label">
+                {apStatus === 'fetching'
+                  ? `Consultando genes ${apProgress.done}/${apProgress.total}…`
+                  : 'Iterando…'}
+              </div>
+              <div className="autopilot-progress-bar">
+                <div
+                  className="autopilot-progress-fill"
+                  style={{ width: apStatus === 'fetching'
+                    ? `${(apProgress.done / Math.max(apProgress.total, 1)) * 100}%`
+                    : '100%' }}
+                />
+              </div>
+            </div>
+          )}
+
+          {apStatus === 'done' && apResult && (
+            <div className="autopilot-results">
+              <div className="autopilot-meta">
+                {apResult.nIterations} iter · omitiendo {apResult.dropM} genes · top {apResult.genesQueried} DE
+              </div>
+              {apResult.suggestions.map(s => (
+                <div key={s.cellType} className="autopilot-suggestion">
+                  <div className="autopilot-sug-header">
+                    <span className="autopilot-sug-type">{s.cellType}</span>
+                    <span className="autopilot-sug-conf">{Math.round(s.confidence * 100)}%</span>
+                    <button
+                      className="use-ann-btn"
+                      onClick={() => { onInputChange(s.cellType); }}
+                    >
+                      Usar
+                    </button>
+                  </div>
+                  <div className="autopilot-conf-bar-bg">
+                    <div
+                      className="autopilot-conf-bar-fill"
+                      style={{
+                        width: `${s.confidence * 100}%`,
+                        background: s.confidence >= 0.7 ? '#68d391' : s.confidence >= 0.4 ? '#f6e05e' : '#fc8181',
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+              {apResult.suggestions.length === 0 && (
+                <div className="autopilot-empty">Sin resultados — genes no encontrados en PlantscRNAdb root.</div>
+              )}
+            </div>
           )}
         </div>
       )}
