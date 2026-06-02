@@ -756,3 +756,625 @@ tr:hover .gene-cell {
 tr:hover .matrix-cell.present {
   background: #15302a;
 }
+
+/* ── Tab system ── */
+.tab-hidden {
+  display: none !important;
+}
+
+.tab-nav {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+
+.tab-btn {
+  background: none;
+  border: 1px solid #2d3748;
+  border-radius: 6px;
+  color: #718096;
+  padding: 4px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.tab-btn:hover {
+  color: #e2e8f0;
+  border-color: #4a5568;
+}
+
+.tab-btn.active {
+  background: #1c3a2a;
+  border-color: #68d391;
+  color: #68d391;
+}
+
+/* ── Annotator: upload section ── */
+.annotator-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.upload-file-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+.upload-file-label.secondary {
+  color: #4a5568;
+}
+
+.upload-file-label input[type='file'] {
+  font-size: 11px;
+  color: #a0aec0;
+  cursor: pointer;
+}
+
+.upload-optional {
+  text-transform: none;
+  font-size: 10px;
+  color: #4a5568;
+}
+
+.de-loaded-badge {
+  font-size: 10px;
+  color: #68d391;
+  background: #0d2016;
+  border: 1px solid #276749;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+/* ── Annotator: progress ── */
+.annotator-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ann-progress-label {
+  font-size: 11px;
+  color: #718096;
+}
+
+.ann-progress-track {
+  height: 4px;
+  background: #2d3748;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.ann-progress-fill {
+  height: 100%;
+  background: #68d391;
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+/* ── Annotator: cluster list ── */
+.annotator-cluster-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.ann-cluster-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.15s;
+}
+
+.ann-cluster-item:hover {
+  background: #1a1f2e;
+}
+
+.ann-cluster-item.selected {
+  background: #1c3a2a;
+  border-color: #276749;
+}
+
+.ann-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ann-dot.annotated { background: #68d391; }
+.ann-dot.empty     { background: #4a5568; }
+
+.ann-cluster-id {
+  font-size: 12px;
+  font-family: monospace;
+  color: #90cdf4;
+  min-width: 22px;
+}
+
+.ann-cluster-type {
+  font-size: 11px;
+  color: #a0aec0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ann-cluster-cells {
+  font-size: 10px;
+  color: #4a5568;
+  flex-shrink: 0;
+}
+
+/* ── Annotator: footer buttons ── */
+.annotator-footer-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid #2d3748;
+}
+
+.export-dict-btn {
+  background: #3182ce;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.export-dict-btn:hover {
+  background: #4299e1;
+}
+
+.clear-ann-btn {
+  background: none;
+  border: 1px solid #2d3748;
+  border-radius: 6px;
+  color: #718096;
+  padding: 6px 12px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.clear-ann-btn:hover {
+  color: #fc8181;
+  border-color: #fc8181;
+}
+
+/* ── Cluster detail panel ── */
+.annotator-main {
+  overflow-y: auto;
+}
+
+.cluster-detail {
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 700px;
+}
+
+.cluster-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #2d3748;
+}
+
+.cluster-detail-header h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.cluster-detail-cells {
+  font-size: 13px;
+  color: #718096;
+}
+
+.cluster-ann-badge {
+  background: #1c3a2a;
+  border: 1px solid #276749;
+  border-radius: 12px;
+  color: #68d391;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  margin-left: auto;
+}
+
+/* ── Detail sections ── */
+.detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.detail-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.de-count {
+  color: #4a5568;
+  text-transform: none;
+  font-weight: 400;
+}
+
+/* ── Score bars ── */
+.score-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.score-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.score-type {
+  font-size: 12px;
+  color: #cbd5e0;
+  min-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.score-bar-track {
+  flex: 1;
+  height: 8px;
+  background: #2d3748;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.score-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+
+.score-val {
+  font-size: 11px;
+  font-family: monospace;
+  min-width: 44px;
+  text-align: right;
+}
+
+/* ── Previous annotations ── */
+.prev-ann-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #1a1f2e;
+  border: 1px solid #2d3748;
+  border-radius: 6px;
+  padding: 7px 10px;
+}
+
+.prev-ann-source {
+  font-size: 10px;
+  font-weight: 700;
+  color: #4a5568;
+  text-transform: uppercase;
+  min-width: 40px;
+}
+
+.prev-ann-value {
+  font-size: 12px;
+  color: #a0aec0;
+  flex: 1;
+}
+
+.use-ann-btn {
+  background: #2d3748;
+  border: none;
+  border-radius: 4px;
+  color: #a0aec0;
+  font-size: 11px;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.use-ann-btn:hover {
+  background: #4a5568;
+  color: #e2e8f0;
+}
+
+/* ── Annotation input ── */
+.annotation-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.annotation-input {
+  flex: 1;
+  background: #1a1f2e;
+  border: 1px solid #2d3748;
+  border-radius: 6px;
+  color: #e2e8f0;
+  padding: 8px 10px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.annotation-input:focus {
+  border-color: #68d391;
+}
+
+.assign-btn {
+  background: #38a169;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.assign-btn:hover:not(:disabled) {
+  background: #48bb78;
+}
+
+.assign-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.unannotate-btn {
+  background: none;
+  border: none;
+  color: #4a5568;
+  font-size: 11px;
+  cursor: pointer;
+  text-decoration: underline;
+  align-self: flex-start;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.unannotate-btn:hover {
+  color: #fc8181;
+}
+
+/* ── DE genes ── */
+.de-table-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px;
+  border-bottom: 1px solid #2d3748;
+  margin-bottom: 2px;
+}
+
+.de-col-rank {
+  font-size: 10px;
+  font-weight: 700;
+  color: #4a5568;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  min-width: 22px;
+}
+
+.de-col-gene {
+  font-size: 10px;
+  font-weight: 700;
+  color: #4a5568;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  min-width: 90px;
+}
+
+.de-col-zscore {
+  font-size: 10px;
+  font-weight: 700;
+  color: #4a5568;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  min-width: 54px;
+  text-align: right;
+  cursor: help;
+}
+
+.de-col-logfc {
+  font-size: 10px;
+  font-weight: 700;
+  color: #4a5568;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  min-width: 44px;
+  text-align: right;
+  cursor: help;
+}
+
+.de-col-pct {
+  font-size: 10px;
+  font-weight: 700;
+  color: #4a5568;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  min-width: 34px;
+  text-align: right;
+  cursor: help;
+}
+
+.de-table {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.de-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: #141824;
+}
+
+.de-row:hover {
+  background: #1a1f2e;
+}
+
+.de-rank {
+  font-size: 11px;
+  color: #4a5568;
+  min-width: 22px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.de-gene-name {
+  font-family: monospace;
+  font-size: 12px;
+  color: #90cdf4;
+  min-width: 90px;
+}
+
+.de-zscore {
+  font-size: 11px;
+  font-family: monospace;
+  color: #f6e05e;
+  min-width: 54px;
+  text-align: right;
+}
+
+.de-logfc {
+  font-size: 11px;
+  font-family: monospace;
+  color: #68d391;
+  min-width: 44px;
+  text-align: right;
+}
+
+.de-pct {
+  font-size: 11px;
+  color: #718096;
+  min-width: 34px;
+  text-align: right;
+}
+
+.de-more {
+  font-size: 11px;
+  color: #4a5568;
+  padding: 2px 4px;
+}
+
+.de-empty {
+  font-size: 12px;
+  color: #4a5568;
+}
+
+.search-de-btn {
+  background: none;
+  border: 1px solid #2d3748;
+  border-radius: 6px;
+  color: #90cdf4;
+  font-size: 12px;
+  padding: 6px 12px;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.search-de-btn:hover {
+  border-color: #90cdf4;
+  color: #bee3f8;
+}
+
+/* ── Export overlay ── */
+.export-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #141824;
+  border-top: 2px solid #3182ce;
+  display: flex;
+  flex-direction: column;
+  max-height: 50%;
+}
+
+.export-overlay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid #2d3748;
+}
+
+.export-overlay-header strong {
+  font-size: 12px;
+  color: #90cdf4;
+}
+
+.export-overlay-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.copy-export-btn {
+  background: #3182ce;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.copy-export-btn:hover {
+  background: #4299e1;
+}
+
+.export-pre {
+  font-family: monospace;
+  font-size: 12px;
+  color: #a0aec0;
+  padding: 12px 16px;
+  overflow-y: auto;
+  flex: 1;
+  white-space: pre;
+  line-height: 1.6;
+}

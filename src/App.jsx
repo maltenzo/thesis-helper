@@ -3,6 +3,7 @@ import { GeneInput } from './GeneInput';
 import { MatrixTable } from './MatrixTable';
 import { DetailPanel } from './DetailPanel';
 import { SaveCluster, SavedClusterList } from './SavedClusters';
+import { AnnotatorTab } from './AnnotatorTab';
 import { useGeneData, serializeResults } from './useGeneData';
 import { useSavedClusters } from './useSavedClusters';
 import './App.css';
@@ -14,6 +15,7 @@ export default function App() {
   const [selectedCellType, setSelectedCellType] = useState(null);
   const [currentGenes, setCurrentGenes] = useState([]);
   const [currentFilters, setCurrentFilters] = useState({});
+  const [activeTab, setActiveTab] = useState('explorer');
   const geneInputRef = useRef(null);
 
   function handleSearch(genes, filters) {
@@ -42,28 +44,55 @@ export default function App() {
     }
   }
 
+  function handleClear() {
+    clear();
+    geneInputRef.current?.reset();
+    setSelectedGene(null);
+    setSelectedCellType(null);
+    setCurrentGenes([]);
+    setCurrentFilters({});
+  }
+
+  function sendToExplorer(genes) {
+    setActiveTab('explorer');
+    setCurrentGenes(genes);
+    setCurrentFilters({});
+    setSelectedGene(null);
+    setSelectedCellType(null);
+    geneInputRef.current?.load(genes, {});
+    search(genes, {});
+  }
+
   return (
     <div className="app">
       <header className="app-header">
         <h1>Arabidopsis Root scRNA Explorer</h1>
-        <p className="subtitle">Gene × Cell type matrix — PlantscRNAdb</p>
+        <nav className="tab-nav">
+          <button
+            className={`tab-btn ${activeTab === 'explorer' ? 'active' : ''}`}
+            onClick={() => setActiveTab('explorer')}
+          >
+            Explorer
+          </button>
+          <button
+            className={`tab-btn ${activeTab === 'annotator' ? 'active' : ''}`}
+            onClick={() => setActiveTab('annotator')}
+          >
+            Annotator
+          </button>
+        </nav>
         <button
           className="clear-btn"
-          onClick={() => {
-            clear();
-            geneInputRef.current?.reset();
-            setSelectedGene(null);
-            setSelectedCellType(null);
-            setCurrentGenes([]);
-            setCurrentFilters({});
-          }}
+          style={{ visibility: activeTab === 'explorer' ? 'visible' : 'hidden' }}
+          onClick={handleClear}
           disabled={status === 'idle'}
         >
           Clear
         </button>
       </header>
 
-      <main className="app-main">
+      {/* Explorer tab — always mounted to preserve GeneInput ref */}
+      <main className={`app-main ${activeTab !== 'explorer' ? 'tab-hidden' : ''}`}>
         <aside className="sidebar">
           <GeneInput
             ref={geneInputRef}
@@ -136,6 +165,11 @@ export default function App() {
             </div>
           )}
         </section>
+      </main>
+
+      {/* Annotator tab — always mounted to preserve uploaded CSV state */}
+      <main className={`app-main ${activeTab !== 'annotator' ? 'tab-hidden' : ''}`}>
+        <AnnotatorTab onSendToExplorer={sendToExplorer} />
       </main>
     </div>
   );
