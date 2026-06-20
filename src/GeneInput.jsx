@@ -22,7 +22,8 @@ export const GeneInput = forwardRef(function GeneInput({ onSearch, onInputChange
   }));
 
   function parseGenes(raw) {
-    return [...new Set(raw.split(/[\s,;]+/).map((g) => g.trim().toUpperCase()).filter(Boolean))];
+    // ponytail: also splits python-list syntax ['g1', 'g2'] — brackets/quotes are just separators
+    return [...new Set(raw.split(/[\s,;'"[\]]+/).map((g) => g.trim().toUpperCase()).filter(Boolean))];
   }
 
   function handleSubmit(e) {
