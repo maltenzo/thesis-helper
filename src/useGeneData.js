@@ -2,18 +2,31 @@ import { useState, useCallback, useMemo } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { fetchGene } from './api';
 
+// each cell of the matrix is a record: best (highest-cosg) marker hit for a gene×celltype
+const ZERO_REC = { cosg: 0, log2fc: 0, pct1: 0, pct2: 0 };
+
+function serializeMap(map) {
+  return Object.fromEntries([...map].map(([k, recs]) => [k, Object.fromEntries(recs)]));
+}
+
+function deserializeMap(obj) {
+  return new Map(
+    Object.entries(obj).map(([k, v]) => [
+      k,
+      // ponytail: tolerate old saved clusters where value was a plain string[] (presence only)
+      Array.isArray(v)
+        ? new Map(v.map((name) => [name, ZERO_REC]))
+        : new Map(Object.entries(v)),
+    ])
+  );
+}
+
 export function serializeResults(geneMap, cellTypeMap) {
-  return {
-    geneMap: Object.fromEntries([...geneMap.entries()].map(([g, s]) => [g, [...s]])),
-    cellTypeMap: Object.fromEntries([...cellTypeMap.entries()].map(([ct, s]) => [ct, [...s]])),
-  };
+  return { geneMap: serializeMap(geneMap), cellTypeMap: serializeMap(cellTypeMap) };
 }
 
 export function deserializeResults({ geneMap, cellTypeMap }) {
-  return {
-    geneMap: new Map(Object.entries(geneMap).map(([g, arr]) => [g, new Set(arr)])),
-    cellTypeMap: new Map(Object.entries(cellTypeMap).map(([ct, arr]) => [ct, new Set(arr)])),
-  };
+  return { geneMap: deserializeMap(geneMap), cellTypeMap: deserializeMap(cellTypeMap) };
 }
 
 function geneQueryKey(gene, filters) {
@@ -55,13 +68,23 @@ export function useGeneData() {
     queries.forEach((q, i) => {
       if (!q.isSuccess) return;
       const gene = targetGenes[i];
-      const cellTypes = new Set();
+      geneMap.set(gene, new Map());
       for (const r of q.data) {
-        cellTypes.add(r.celltypes);
-        if (!cellTypeMap.has(r.celltypes)) cellTypeMap.set(r.celltypes, new Set());
-        cellTypeMap.get(r.celltypes).add(gene);
+        const ct = r.celltypes;
+        const rec = {
+          cosg: Number(r.cosg_score) || 0,
+          log2fc: Number(r.avg_log2fc) || 0,
+          pct1: Number(r.pct1) || 0,
+          pct2: Number(r.pct2) || 0,
+        };
+        if (!cellTypeMap.has(ct)) cellTypeMap.set(ct, new Map());
+        // keep the strongest hit when a gene marks the same cell type in several studies
+        const prev = geneMap.get(gene).get(ct);
+        if (!prev || rec.cosg > prev.cosg) {
+          geneMap.get(gene).set(ct, rec);
+          cellTypeMap.get(ct).set(gene, rec);
+        }
       }
-      geneMap.set(gene, cellTypes);
     });
     return { geneMap, cellTypeMap };
   }, [queries, targetGenes]);

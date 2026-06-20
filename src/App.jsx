@@ -181,7 +181,7 @@ export default function App() {
 
       {/* Sankey tab — always mounted to preserve uploaded CSV state */}
       <main className={`app-main ${activeTab !== 'sankey' ? 'tab-hidden' : ''}`}>
-        <SankeyTab onGoToAnnotator={(res, clusterId) => setActiveTab('annotator')} />
+        <SankeyTab onGoToAnnotator={() => setActiveTab('annotator')} />
       </main>
     </div>
   );

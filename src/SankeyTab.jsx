@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- colocated pure helpers exported for tests */
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { parseScoringCsv, parseDeCsv } from './parseCsv';
 import { useAnnotations } from './useAnnotations';
@@ -62,13 +63,12 @@ function buildLayout(transitions, annotationsByRes, width, height) {
   // returns {cols, links} for SVG rendering
 
   const PAD = 40;
-  const colW = 120;
   const nodeH = 22;
   const nodeGap = 6;
 
   // Collect resolutions in order
   const resolutions = [];
-  for (const { resKey, fromRes, toRes } of transitions) {
+  for (const { fromRes, toRes } of transitions) {
     if (!resolutions.includes(fromRes)) resolutions.push(fromRes);
     if (!resolutions.includes(toRes))   resolutions.push(toRes);
   }
