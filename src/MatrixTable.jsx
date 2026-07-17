@@ -5,7 +5,8 @@ export function MatrixTable({ geneMap, cellTypeMap, onSelectGene, onSelectCellTy
   const [hideUbiquitous, setHideUbiquitous] = useState(false);
   const [sortBy, setSortBy] = useState('score'); // 'score' | 'name'
 
-  const genes = useMemo(() => [...geneMap.keys()].sort(), [geneMap]);
+  // preserve the order genes were entered in the search box (geneMap is insertion-ordered)
+  const genes = useMemo(() => [...geneMap.keys()], [geneMap]);
 
   // cell-type weight = sum of cosg specificity scores of the genes that mark it
   const ctWeight = (m) => [...m.values()].reduce((s, r) => s + r.cosg, 0);
