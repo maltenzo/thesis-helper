@@ -1,6 +1,10 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { fetchGene } from './api';
+
+// gene fetches hit a fragile upstream server that falls over under concurrent load,
+// so we release one query at a time, waiting this long after each settles
+const QUERY_STAGGER_MS = 500;
 
 // each cell of the matrix is a record: best (highest-cosg) marker hit for a gene×celltype
 const ZERO_REC = { cosg: 0, log2fc: 0, pct1: 0, pct2: 0 };
@@ -37,15 +41,26 @@ export function useGeneData() {
   const [targetGenes, setTargetGenes] = useState([]);
   const [activeFilters, setActiveFilters] = useState({});
   const [loadedState, setLoadedState] = useState(null);
+  const [readyCount, setReadyCount] = useState(0);
 
   const queries = useQueries({
-    queries: targetGenes.map((gene) => ({
+    queries: targetGenes.map((gene, i) => ({
       queryKey: geneQueryKey(gene, activeFilters),
       queryFn: () => fetchGene(gene, activeFilters),
       staleTime: Infinity,
       gcTime: Infinity,
+      enabled: i < readyCount,
     })),
   });
+
+  // release the next gene query only after the current one settles + a short pause
+  const currentStatus = queries[readyCount - 1]?.status;
+  useEffect(() => {
+    if (readyCount === 0 || readyCount >= targetGenes.length) return;
+    if (currentStatus !== 'success' && currentStatus !== 'error') return;
+    const t = setTimeout(() => setReadyCount((c) => c + 1), QUERY_STAGGER_MS);
+    return () => clearTimeout(t);
+  }, [currentStatus, readyCount, targetGenes.length]);
 
   const liveStatus = useMemo(() => {
     if (targetGenes.length === 0) return 'idle';
@@ -98,17 +113,20 @@ export function useGeneData() {
     setLoadedState(null);
     setTargetGenes(genes);
     setActiveFilters(filters);
+    setReadyCount(genes.length > 0 ? 1 : 0);
   }, []);
 
   const loadResults = useCallback((serialized) => {
     setTargetGenes([]);
     setActiveFilters({});
+    setReadyCount(0);
     setLoadedState(deserializeResults(serialized));
   }, []);
 
   const clear = useCallback(() => {
     setTargetGenes([]);
     setActiveFilters({});
+    setReadyCount(0);
     setLoadedState(null);
   }, []);
 
